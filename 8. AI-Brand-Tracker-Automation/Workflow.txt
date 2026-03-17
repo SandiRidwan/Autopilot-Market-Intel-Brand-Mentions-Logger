@@ -1,0 +1,98 @@
+STRUKTUR UTAMA WORKFLOW (7 MODUL)
+Google Sheets (Trigger) -> Tools (Repeater) -> Tools (Sleep) -> Groq (Tracker) -> Groq (Extractor) -> Google Sheets (Logger) -> Gmail (Notification)
+
+Langkah 1: Google Sheets - Search Rows (Trigger)
+Fungsi: Mengambil daftar pertanyaan/prompt dari spreadsheet.
+
+Setting:
+
+Spreadsheet: Pilih file riset kamu.
+
+Sheet: Pilih tab Prompts.
+
+Schedule (Ikon Jam Ungu):
+
+Klik ikon jam di pojok kiri bawah modul.
+
+Run Scenario: Weekly.
+
+Days: Monday.
+
+Time: 09:00.
+
+Langkah 2: Tools - Repeater
+Fungsi: Memaksa sistem mengulang proses sebanyak 10 kali untuk setiap 1 prompt.
+
+Initial Value: 1
+
+Repeats: 10
+
+Langkah 3: Tools - Sleep
+Fungsi: Memberikan jeda agar akun Groq gratisan kamu tidak kena blokir (Rate Limit).
+
+Delay: 10 detik.
+
+Langkah 4: Groq - Create a Chat Completion (The Tracker)
+Fungsi: AI menjawab pertanyaan dan menyebutkan brand.
+
+Model: llama3-70b-8192 (pilih dari dropdown atau ketik manual jika tidak ada).
+
+Messages (Add Item):
+
+Role: User
+
+Content: Pilih variabel Prompt_Text dari Modul 1.
+
+Langkah 5: Groq - Create a Chat Completion (The Extractor)
+Fungsi: Mengambil hanya nama brand dari jawaban panjang AI sebelumnya.
+
+Model: llama3-8b-8192.
+
+Messages (Add Item):
+
+Role: User
+
+Content: Ketik ini:
+
+Extract ONLY brand names from the text provided below. Output as a comma-separated list. If no brands are found, output 'None'. No conversational text.
+
+Text: [Pilih variabel Choices[] > Message > Content dari Modul 4]
+
+Langkah 6: Google Sheets - Add a Row (The Logger)
+Fungsi: Mencatat hasil akhir ke database.
+
+Sheet: Pilih tab Weekly_Logs.
+
+Isi Kolom:
+
+Date: Pilih variabel now (tab kalender).
+
+Prompt: Pilih Prompt_Text dari Modul 1.
+
+Run_Number: Pilih variabel i dari Modul 2 (Repeater).
+
+Full_Response: Pilih Choices[] > Message > Content dari Modul 4.
+
+Extracted_Brands: Pilih Choices[] > Message > Content dari Modul 5.
+
+First_Brand (Rumus): {{get(split(5.choices[].message.content; ", "); 1)}} (Sesuaikan angka 5 dengan nomor modul Extractor kamu).
+
+Brand_Count (Rumus): {{length(split(5.choices[].message.content; ", "))}}
+
+Langkah 7: Gmail - Send an Email (Notification)
+Fungsi: Memberi tahu kamu kalau 200 data sudah selesai diringkas.
+
+Penting: Tambahkan Array Aggregator sebelum modul ini agar email hanya terkirim 1x di akhir.
+
+To: Alamat email kamu.
+
+Subject: Riset Mingguan Selesai!
+
+Content: Halo Sandi, 200 data riset brand minggu ini sudah masuk ke Google Sheets.
+
+Cara Menjalankan & Maintenance:
+Save: Klik ikon disket.
+
+Test: Klik Run Once.
+
+Aktifkan: Geser saklar Scheduling ke ON.
